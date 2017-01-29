@@ -26,6 +26,7 @@ THE SOFTWARE.
 '''
 
 from imu import InvenSenseMPU, bytes_toint, MPUException
+from machine import I2C
 from vector3d import Vector3d
 
 
@@ -41,7 +42,7 @@ class MPU9250(InvenSenseMPU):
 
     _mpu_addr = (104, 105)  # addresses of MPU9250 determined by voltage on pin AD0
     _mag_addr = 12          # Magnetometer address
-    _chip_id = 113
+    _chip_id = 115
 
     def __init__(self, side_str, device_addr=None, transposition=(0, 1, 2), scaling=(1, 1, 1)):
 
@@ -98,7 +99,7 @@ class MPU9250(InvenSenseMPU):
         '''
         if filt in range(8):
             try:
-                self._write(filt, 0x1A, self.mpu_addr)
+                self._write(chr(filt), 0x1A, self.mpu_addr)
             except OSError:
                 raise MPUException(self._I2Cerror)
         else:
@@ -129,7 +130,7 @@ class MPU9250(InvenSenseMPU):
         '''
         if filt in range(8):
             try:
-                self._write(filt, 0x1D, self.mpu_addr)
+                self._write(chr(filt), 0x1D, self.mpu_addr)
             except OSError:
                 raise MPUException(self._I2Cerror)
         else:
@@ -142,10 +143,10 @@ class MPU9250(InvenSenseMPU):
         returns correction values
         '''
         try:
-            self._write(0x0F, 0x0A, self._mag_addr)      # fuse ROM access mode
+            self._write(chr(0x0F), 0x0A, self._mag_addr)      # fuse ROM access mode
             self._read(self.buf3, 0x10, self._mag_addr)  # Correction values
-            self._write(0, 0x0A, self._mag_addr)         # Power down mode (AK8963 manual 6.4.6)
-            self._write(0x16, 0x0A, self._mag_addr)      # 16 bit (0.15uT/LSB not 0.015), mode 2
+            self._write(chr(0), 0x0A, self._mag_addr)         # Power down mode (AK8963 manual 6.4.6)
+            self._write(chr(0x16), 0x0A, self._mag_addr)      # 16 bit (0.15uT/LSB not 0.015), mode 2
         except OSError:
             raise MPUException(self._I2Cerror)
         mag_x = (0.5*(self.buf3[0] - 128))/128 + 1

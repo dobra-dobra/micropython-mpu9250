@@ -37,7 +37,8 @@ THE SOFTWARE.
 # At runtime try to continue returning last good data value. We don't want aircraft
 # crashing. However if the I2C has crashed we're probably stuffed.
 
-import pyb
+from time import sleep_ms, ticks_ms
+from machine import I2C
 from vector3d import Vector3d
 
 
@@ -77,16 +78,10 @@ class InvenSenseMPU(object):
         self.buf6 = bytearray([0]*6)
         self.timeout = 10                       # I2C tieout mS
 
-        tim = pyb.millis()                      # Ensure PSU and device have settled
+        tim = ticks_ms()                      # Ensure PSU and device have settled
         if tim < 200:
-            pyb.delay(200-tim)
-        if type(side_str) is str:
-            sst = side_str.upper()
-            if sst in {'X', 'Y'}:
-                self._mpu_i2c = pyb.I2C(sst, pyb.I2C.MASTER)
-            else:
-                raise ValueError('I2C side must be X or Y')
-        elif type(side_str) is pyb.I2C:
+            sleep_ms(200-tim)
+        if type(side_str) is I2C:
             self._mpu_i2c = side_str
 
         if device_addr is None:
@@ -116,14 +111,14 @@ class InvenSenseMPU(object):
         '''
         Read bytes to pre-allocated buffer Caller traps OSError.
         '''
-        self._mpu_i2c.mem_read(buf, addr, memaddr, timeout=self.timeout)
+        self._mpu_i2c.readfrom_mem_into(addr, memaddr, buf)
 
     # write to device
     def _write(self, data, memaddr, addr):
         '''
         Perform a memory write. Caller should trap OSError.
         '''
-        self._mpu_i2c.mem_write(data, addr, memaddr, timeout=self.timeout)
+        self._mpu_i2c.writeto_mem(addr, memaddr, data)
 
     # wake
     def wake(self):
@@ -131,7 +126,7 @@ class InvenSenseMPU(object):
         Wakes the device.
         '''
         try:
-            self._write(0x01, 0x6B, self.mpu_addr)  # Use best clock source
+            self._write(chr(0x01), 0x6B, self.mpu_addr)  # Use best clock source
         except OSError:
             raise MPUException(self._I2Cerror)
         return 'awake'
@@ -159,7 +154,7 @@ class InvenSenseMPU(object):
             raise MPUException(self._I2Cerror)
         chip_id = int(self.buf1[0])
         if chip_id != self._chip_id:
-            raise ValueError('Bad chip ID retrieved: MPU communication failure')
+            raise ValueError('MPU communication failure. Bad chip ID retrieved: ' + str(chip_id))
         return chip_id
 
     # passthrough
@@ -182,8 +177,8 @@ class InvenSenseMPU(object):
         if type(mode) is bool:
             val = 2 if mode else 0
             try:
-                self._write(val, 0x37, self.mpu_addr)  # I think this is right.
-                self._write(0x00, 0x6A, self.mpu_addr)
+                self._write(chr(val), 0x37, self.mpu_addr)  # I think this is right.
+                self._write(chr(0x00), 0x6A, self.mpu_addr)
             except OSError:
                 raise MPUException(self._I2Cerror)
         else:
@@ -211,7 +206,7 @@ class InvenSenseMPU(object):
         if rate < 0 or rate > 255:
             raise ValueError("Rate must be in range 0-255")
         try:
-            self._write(rate, 0x19, self.mpu_addr)
+            self._write(chr(rate), 0x19, self.mpu_addr)
         except OSError:
             raise MPUException(self._I2Cerror)
 
@@ -240,7 +235,7 @@ class InvenSenseMPU(object):
         ar_bytes = (0x00, 0x08, 0x10, 0x18)
         if accel_range in range(len(ar_bytes)):
             try:
-                self._write(ar_bytes[accel_range], 0x1C, self.mpu_addr)
+                self._write(chr(ar_bytes[accel_range]), 0x1C, self.mpu_addr)
             except OSError:
                 raise MPUException(self._I2Cerror)
         else:
@@ -272,7 +267,7 @@ class InvenSenseMPU(object):
         gr_bytes = (0x00, 0x08, 0x10, 0x18)
         if gyro_range in range(len(gr_bytes)):
             try:
-                self._write(gr_bytes[gyro_range], 0x1B, self.mpu_addr)  # Sets fchoice = b11 which enables filter
+                self._write(chr(gr_bytes[gyro_range]), 0x1B, self.mpu_addr)  # Sets fchoice = b11 which enables filter
             except OSError:
                 raise MPUException(self._I2Cerror)
         else:
