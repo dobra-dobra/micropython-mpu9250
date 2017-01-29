@@ -1,7 +1,6 @@
 As of now, this repo holds:
 * vector3d - a vector class for IMU devices
 * imu - a base class for MPU9x50 devices
-* mpu9150 - a class for the MPU9150
 * mpu9250 - a class for the MPU9250
 
 vector3d will eventually be spun out to serve as common starting point for other
@@ -46,10 +45,12 @@ can be powered from 3.3V or 5V.
 
 ### Quickstart
 
-Example assuming an MPU9250 connected to 'X' I2C interface on the Pyboard:
+Example assuming an MPU9250 connected to most commonly used I2C pins on the ESP8266:
 ```python
 from mpu9250 import MPU9250
-imu = MPU9250('X')
+from machine import Pin, I2C
+i2c = I2C(scl = Pin(5), sda = Pin(4))
+imu = MPU9250(i2c)
 print(imu.accel.xyz)
 print(imu.gyro.xyz)
 print(imu.mag.xyz)
