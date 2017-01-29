@@ -1,3 +1,7 @@
+# MicroPython MPU9250 driver for ESP8266
+
+Needs more testing, some functions may not work or have errors.
+
 As of now, this repo holds:
 * vector3d - a vector class for IMU devices
 * imu - a base class for MPU9x50 devices
@@ -89,8 +93,7 @@ relative coordinates.
 ## Methods
 
 ``MPU9250()`` The constructor supports the following arguments  
-  1. side_str 'X' or 'Y' (mandatory) defines the I2C interface in use. Alternatively an initialised
-I2C object may be passed.
+  1. An initialised I2C object need to be passed.
   2. device_addr 0 or 1 (optional) Two devices may be used with addresses determined by the voltage
 on the AD0 pin. If only one device is used, this argument may be None when the device
 will be automatically detected.
